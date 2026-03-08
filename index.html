@@ -101,18 +101,8 @@
       gap: 8px;
     }
 
-    .bpm-step {
-      width: 44px;
-      height: 44px;
-      font-size: 1.2rem;
-      padding: 0;
-    }
-
-    .bpm-value {
-      min-width: 56px;
-      text-align: center;
-      font-weight: 800;
-      font-size: 1.25rem;
+    .bpm-select {
+      min-width: 108px;
     }
 
     select {
@@ -183,8 +173,8 @@
     }
 
     .dot {
-      width: clamp(18px, 5vw, 32px);
-      height: clamp(18px, 5vw, 32px);
+      width: clamp(27px, 7.5vw, 48px);
+      height: clamp(27px, 7.5vw, 48px);
       border-radius: 50%;
       background: #4f4f4f;
       box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
@@ -290,11 +280,9 @@
     <div class="panel topbar">
       <div class="row">
         <div class="control-group">
-          <span class="label">BPM</span>
+          <label for="bpm-select">BPM</label>
           <div class="bpm-box">
-            <button id="bpm-down" class="bpm-step" type="button">−</button>
-            <span id="bpm-value" class="bpm-value">70</span>
-            <button id="bpm-up" class="bpm-step" type="button">＋</button>
+            <select id="bpm-select" class="bpm-select"></select>
           </div>
         </div>
 
@@ -371,9 +359,7 @@
       [RHYTHMS.quarter, RHYTHMS.eighth, RHYTHMS.triplet, RHYTHMS.sixteenth, RHYTHMS.sextuplet, RHYTHMS.sixteenth, RHYTHMS.triplet, RHYTHMS.eighth]
     ];
 
-    const bpmUpBtn = document.getElementById("bpm-up");
-    const bpmDownBtn = document.getElementById("bpm-down");
-    const bpmValue = document.getElementById("bpm-value");
+    const bpmSelect = document.getElementById("bpm-select");
     const patternSelect = document.getElementById("pattern-select");
     const measureSelect = document.getElementById("measure-select");
     const startStopBtn = document.getElementById("startStop");
@@ -502,8 +488,16 @@
       };
     }
 
+    function populateBpmOptions() {
+      bpmSelect.innerHTML = Array.from({ length: 181 }, (_, i) => {
+        const value = i + 20;
+        return `<option value="${value}">${value}</option>`;
+      }).join("");
+      bpmSelect.value = String(bpm);
+    }
+
     function updateBpmDisplay() {
-      bpmValue.textContent = bpm;
+      bpmSelect.value = String(bpm);
     }
 
     function buildIdleVisual() {
@@ -723,13 +717,8 @@
       buildIdleVisual();
     }
 
-    bpmUpBtn.addEventListener("click", () => {
-      bpm = clamp(bpm + 1, 20, 200);
-      updateBpmDisplay();
-    });
-
-    bpmDownBtn.addEventListener("click", () => {
-      bpm = clamp(bpm - 1, 20, 200);
+    bpmSelect.addEventListener("change", () => {
+      bpm = clamp(Number(bpmSelect.value), 20, 200);
       updateBpmDisplay();
     });
 
@@ -759,6 +748,7 @@
     });
 
     measuresPerRhythm = Number(measureSelect.value);
+    populateBpmOptions();
     updateBpmDisplay();
     buildIdleVisual();
   </script>
