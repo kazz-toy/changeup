@@ -2,512 +2,323 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>チェンジアップ練習用メトロノーム</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>チェンジアップ練習用メトロノーム</title>
   <style>
-    :root {
-      --bg: #111;
-      --panel: #1c1c1c;
-      --panel-2: #252525;
-      --text: #f2f2f2;
-      --muted: #8c8c8c;
-      --accent: #40ff7a;
-      --accent-soft: rgba(64,255,122,0.22);
-      --line-idle: #4a4a4a;
-      --line-active: #4fd8ff;
+    :root{
+      --bg:#111;
+      --panel:#1b1b1b;
+      --panel2:#202020;
+      --text:#f4f4f4;
+      --muted:#8a8a8a;
+      --dot:#555;
+      --active:#35ff7a;
+      --line:#17d7ff;
+      --accent:#ffaa00;
+      --border:#333;
+      --danger:#ff6b6b;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+    }
+    .wrap{
+      width:min(100%, 520px);
+      padding:16px 14px 28px;
+    }
+    h1{
+      margin:0 0 14px;
+      font-size:1.25rem;
+      text-align:center;
+    }
+    .controls{
+      display:grid;
+      gap:10px;
+      margin-bottom:14px;
+    }
+    .control-card{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+    }
+    .control-row{
+      display:grid;
+      gap:10px;
+    }
+    .field{
+      display:grid;
+      gap:6px;
+    }
+    .field label{
+      font-size:0.92rem;
+      color:#ddd;
+      font-weight:700;
+    }
+    select, button{
+      width:100%;
+      border:none;
+      border-radius:12px;
+      padding:12px 14px;
+      font-size:1rem;
+      background:#2b2b2b;
+      color:var(--text);
+      -webkit-appearance:none;
+      appearance:none;
+    }
+    select{
+      border:1px solid #3a3a3a;
+    }
+    .buttons{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    button{
+      font-weight:800;
+      cursor:pointer;
+    }
+    #startBtn{ background:#2a4d31; }
+    #stopBtn{ background:#4a2d2d; }
+    #startBtn:active{ transform:scale(0.99); }
+    #stopBtn:active{ transform:scale(0.99); }
+
+    .display-card{
+      background:var(--panel2);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:14px;
+      margin-bottom:12px;
     }
 
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    .main-title, .second-title{
+      text-align:center;
+      font-weight:800;
+      margin-bottom:8px;
+      color:#ddd;
     }
 
-    body {
-      min-height: 100vh;
-      padding: 16px 14px 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
+    /* 第1：正方形寄り */
+    .main-visual-wrap{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      margin-bottom:8px;
+    }
+    canvas#mainCanvas{
+      display:block;
+      width:min(82vw, 320px);
+      height:min(82vw, 320px);
+      max-width:320px;
+      max-height:320px;
+      background:#161616;
+      border:1px solid #2f2f2f;
+      border-radius:18px;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,0.02);
     }
 
-    .app {
-      width: min(100%, 760px);
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+    /* 第2：縦幅短め */
+    .second-visual{
+      position:relative;
+      height:64px;
+      border-radius:12px;
+      background:#161616;
+      border:1px solid #2f2f2f;
+      overflow:hidden;
+    }
+    .second-line{
+      position:absolute;
+      top:10px;
+      width:4px;
+      height:44px;
+      background:var(--line);
+      box-shadow:0 0 12px rgba(23,215,255,0.75);
+      border-radius:2px;
+      transition:none;
+      left:12px;
+    }
+    .second-label-left, .second-label-right{
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      font-size:0.8rem;
+      color:#9adff0;
+      opacity:0.8;
+      user-select:none;
+      pointer-events:none;
+    }
+    .second-label-left{ left:18px; }
+    .second-label-right{ right:18px; }
+
+    .status{
+      margin-top:12px;
+      background:#181818;
+      border:1px solid #2e2e2e;
+      border-radius:12px;
+      padding:10px 12px;
+      line-height:1.7;
+      min-height:88px;
+    }
+    .status-line{
+      font-size:0.98rem;
+      font-weight:700;
+    }
+    .muted{
+      color:var(--muted);
+      font-size:0.85rem;
+      margin-top:8px;
+      text-align:center;
     }
 
-    .panel {
-      background: var(--panel);
-      border-radius: 16px;
-      padding: 14px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-    }
-
-    .topbar {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-
-    .row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .control-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .control-group label,
-    .label {
-      font-size: 0.95rem;
-      font-weight: 700;
-    }
-
-    button, select, input[type="number"] {
-      border: none;
-      border-radius: 10px;
-      background: var(--panel-2);
-      color: var(--text);
-      font-size: 1rem;
-    }
-
-    button {
-      cursor: pointer;
-      padding: 10px 14px;
-      font-weight: 700;
-      min-height: 44px;
-    }
-
-    button:hover, select:hover, input[type="number"]:hover {
-      filter: brightness(1.08);
-    }
-
-    .bpm-box {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .bpm-select {
-      min-width: 108px;
-    }
-
-    select {
-      min-height: 44px;
-      padding: 0 12px;
-      font-weight: 700;
-    }
-
-    .start-btn {
-      width: 100%;
-      background: #2e2e2e;
-      font-size: 1.05rem;
-    }
-
-    .start-btn.running {
-      background: #5a1d1d;
-    }
-
-    .visual-panel {
-      padding: 16px 14px 18px;
-    }
-
-    .status-line {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-      font-size: 0.92rem;
-      color: #d6d6d6;
-      flex-wrap: wrap;
-    }
-
-    .badge {
-      background: #2a2a2a;
-      border-radius: 999px;
-      padding: 7px 11px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .lane-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-      color: #f6f6f6;
-    }
-
-    .first-lane {
-      min-height: 120px;
-      border-radius: 16px;
-      background: linear-gradient(180deg, #181818 0%, #141414 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 18px 8px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .dot-row {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: clamp(8px, 1.8vw, 18px);
-      flex-wrap: nowrap;
-    }
-
-    .dot {
-      width: clamp(27px, 7.5vw, 48px);
-      height: clamp(27px, 7.5vw, 48px);
-      border-radius: 50%;
-      background: #4f4f4f;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
-      transition: transform 60ms linear, background 60ms linear, box-shadow 60ms linear;
-      flex: 0 0 auto;
-    }
-
-    .dot.active {
-      background: var(--accent);
-      transform: scale(1.08);
-      box-shadow: 0 0 16px var(--accent), 0 0 28px var(--accent-soft);
-    }
-
-    .second-wrap {
-      margin-top: 16px;
-    }
-
-    .second-lane {
-      position: relative;
-      height: 132px;
-      border-radius: 16px;
-      background: linear-gradient(180deg, #181818 0%, #141414 100%);
-      overflow: hidden;
-    }
-
-    .second-side-label {
-      position: absolute;
-      top: 12px;
-      font-size: 0.84rem;
-      font-weight: 700;
-      color: #b8b8b8;
-      letter-spacing: 0.04em;
-    }
-
-    .second-side-label.left { left: 12px; }
-    .second-side-label.right { right: 12px; }
-
-    .pulse-line {
-      position: absolute;
-      top: 18px;
-      bottom: 18px;
-      width: 8px;
-      border-radius: 999px;
-      background: var(--line-idle);
-      transition: left 80ms linear, background 50ms linear, box-shadow 50ms linear;
-      box-shadow: 0 0 0 transparent;
-    }
-
-    .pulse-line.active {
-      background: var(--line-active);
-      box-shadow: 0 0 18px rgba(79,216,255,0.9);
-    }
-
-    .legend {
-      display: flex;
-      gap: 14px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-      font-size: 0.84rem;
-      color: #c7c7c7;
-    }
-
-    .legend-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .legend-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #4f4f4f;
-    }
-
-    .legend-dot.active { background: var(--accent); }
-    .legend-line {
-      width: 4px;
-      height: 14px;
-      border-radius: 999px;
-      background: var(--line-active);
-      box-shadow: 0 0 10px rgba(79,216,255,0.7);
-    }
-
-    .hint {
-      color: var(--muted);
-      font-size: 0.82rem;
-      line-height: 1.5;
-    }
-
-    @media (max-width: 430px) {
-      body { padding: 12px 10px 22px; }
-      .panel { padding: 12px; border-radius: 14px; }
-      .first-lane { min-height: 108px; }
-      .second-lane { height: 124px; }
-      .status-line { font-size: 0.86rem; }
-      .badge { padding: 6px 9px; }
+    @media (min-width: 420px){
+      .control-row{
+        grid-template-columns:1fr 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <div class="panel topbar">
-      <div class="row">
-        <div class="control-group">
-          <label for="bpm-select">BPM</label>
-          <div class="bpm-box">
-            <select id="bpm-select" class="bpm-select"></select>
+  <div class="wrap">
+    <h1>チェンジアップ練習用メトロノーム</h1>
+
+    <div class="controls">
+      <div class="control-card">
+        <div class="control-row">
+          <div class="field">
+            <label for="patternSelect">第1パターン</label>
+            <select id="patternSelect">
+              <option value="1">パターン1（4→8→3連→16→6→32→6→16→3連→8）</option>
+              <option value="2">パターン2（4→8→3連→16→6→16→3連→8）</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="measureSelect">各音符の小節数</label>
+            <select id="measureSelect">
+              <option value="1">1小節</option>
+              <option value="2">2小節</option>
+              <option value="3">3小節</option>
+              <option value="4">4小節</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="bpmSelect">BPM</label>
+            <select id="bpmSelect"></select>
           </div>
         </div>
 
-        <div class="control-group">
-          <label for="pattern-select">第1パターン</label>
-          <select id="pattern-select">
-            <option value="0">4→8→3連→16→6連→32→6連→16→3連→8</option>
-            <option value="1">4→8→3連→16→6連→16→3連→8</option>
-          </select>
+        <div class="buttons">
+          <button id="startBtn">スタート</button>
+          <button id="stopBtn">ストップ</button>
         </div>
-      </div>
-
-      <div class="row">
-        <div class="control-group">
-          <label for="measure-select">各音符の小節数</label>
-          <select id="measure-select">
-            <option value="1">1小節</option>
-            <option value="2">2小節</option>
-            <option value="3">3小節</option>
-            <option value="4">4小節</option>
-          </select>
-        </div>
-      </div>
-
-      <button id="startStop" class="start-btn" type="button">スタート</button>
-    </div>
-
-    <div class="panel visual-panel">
-      <div class="status-line">
-        <span id="mode-badge" class="badge">待機中</span>
-        <span id="pattern-badge" class="badge">第1: 4分音符</span>
-        <span id="measure-badge" class="badge">1 / 1 小節</span>
-        <span id="beat-badge" class="badge">拍: 1 / 4</span>
-      </div>
-
-      <div class="lane-title">第1（手 / スネア）</div>
-      <div class="first-lane">
-        <div id="dot-row" class="dot-row"></div>
-      </div>
-
-      <div class="second-wrap">
-        <div class="lane-title">第2（8分固定 / 奇数=右端バスドラ、偶数=左端ハイハット）</div>
-        <div class="second-lane" id="second-lane">
-          <div class="second-side-label left">左端 = ハイハット</div>
-          <div class="second-side-label right">右端 = バスドラ</div>
-          <div id="pulse-line" class="pulse-line"></div>
-        </div>
-      </div>
-
-      <div class="legend">
-        <span class="legend-item"><span class="legend-dot"></span>未発音</span>
-        <span class="legend-item"><span class="legend-dot active"></span>現在の第1発音</span>
-        <span class="legend-item"><span class="legend-line"></span>現在の第2発音</span>
       </div>
     </div>
 
-    <div class="panel hint">
-      スタート後は、最初の1小節だけ4分音符プリカウントが鳴り、その後にチェンジアップ練習へ入ります。第1は1拍ごとに左から右へ点灯し、第2は8分固定で右端・左端へ交互に移動します。
+    <div class="display-card">
+      <div class="main-title">第1（手 / スネア）</div>
+      <div class="main-visual-wrap">
+        <canvas id="mainCanvas" width="320" height="320"></canvas>
+      </div>
+    </div>
+
+    <div class="display-card">
+      <div class="second-title">第2（バスドラ + ハイハット / 8分固定）</div>
+      <div class="second-visual" id="secondVisual">
+        <div class="second-label-left">HH</div>
+        <div class="second-label-right">BD</div>
+        <div class="second-line" id="secondLine"></div>
+      </div>
+
+      <div class="status" id="statusBox">
+        <div class="status-line" id="statusRun">停止中</div>
+        <div class="status-line" id="statusRhythm">第1: 4分音符</div>
+        <div class="status-line" id="statusMeasure">1/1小節</div>
+        <div class="status-line" id="statusBeat">拍1/4</div>
+      </div>
+
+      <div class="muted">スタート直後のみ、1小節のプリカウントが入ります。</div>
     </div>
   </div>
 
   <script>
-    const RHYTHMS = {
-      quarter: { label: "4分音符", count: 1 },
-      eighth: { label: "8分音符", count: 2 },
-      triplet: { label: "3連符", count: 3 },
-      sixteenth: { label: "16分音符", count: 4 },
-      sextuplet: { label: "6連符", count: 6 },
-      thirtySecond: { label: "32分音符", count: 8 }
+    // ===== 基本設定 =====
+    const PATTERNS = {
+      1: [1, 2, 3, 4, 6, 8, 6, 4, 3, 2],
+      2: [1, 2, 3, 4, 6, 4, 3, 2]
     };
 
-    const PATTERNS = [
-      [RHYTHMS.quarter, RHYTHMS.eighth, RHYTHMS.triplet, RHYTHMS.sixteenth, RHYTHMS.sextuplet, RHYTHMS.thirtySecond, RHYTHMS.sextuplet, RHYTHMS.sixteenth, RHYTHMS.triplet, RHYTHMS.eighth],
-      [RHYTHMS.quarter, RHYTHMS.eighth, RHYTHMS.triplet, RHYTHMS.sixteenth, RHYTHMS.sextuplet, RHYTHMS.sixteenth, RHYTHMS.triplet, RHYTHMS.eighth]
-    ];
+    const RHYTHM_LABEL = {
+      1: "4分音符",
+      2: "8分音符",
+      3: "3連符",
+      4: "16分音符",
+      6: "6連符",
+      8: "32分音符"
+    };
 
-    const bpmSelect = document.getElementById("bpm-select");
-    const patternSelect = document.getElementById("pattern-select");
-    const measureSelect = document.getElementById("measure-select");
-    const startStopBtn = document.getElementById("startStop");
+    // 時計文字盤配置（12時=上）
+    // 角度は度数。-90 が12時。
+    const CLOCK_ANGLES = {
+      1: [-90],                            // 12時
+      2: [-90, 90],                        // 12時, 6時
+      3: [-90, 30, 150],                   // 12時, 4時, 8時
+      4: [-90, 0, 90, 180],                // 12時, 3時, 6時, 9時
+      6: [-90, -30, 30, 90, 150, 210],     // 12時, 2時, 4時, 6時, 8時, 10時
+      8: [-90, -45, 0, 45, 90, 135, 180, 225] // 12, 1:30, 3, 4:30, 6, 7:30, 9, 10:30
+    };
 
-    const modeBadge = document.getElementById("mode-badge");
-    const patternBadge = document.getElementById("pattern-badge");
-    const measureBadge = document.getElementById("measure-badge");
-    const beatBadge = document.getElementById("beat-badge");
+    // ===== DOM =====
+    const patternSelect = document.getElementById("patternSelect");
+    const measureSelect = document.getElementById("measureSelect");
+    const bpmSelect = document.getElementById("bpmSelect");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
 
-    const dotRow = document.getElementById("dot-row");
-    const pulseLine = document.getElementById("pulse-line");
-    const secondLane = document.getElementById("second-lane");
+    const mainCanvas = document.getElementById("mainCanvas");
+    const ctx = mainCanvas.getContext("2d");
 
+    const secondVisual = document.getElementById("secondVisual");
+    const secondLine = document.getElementById("secondLine");
+
+    const statusRun = document.getElementById("statusRun");
+    const statusRhythm = document.getElementById("statusRhythm");
+    const statusMeasure = document.getElementById("statusMeasure");
+    const statusBeat = document.getElementById("statusBeat");
+
+    // ===== BPMプルダウン =====
+    for (let i = 20; i <= 200; i++) {
+      const op = document.createElement("option");
+      op.value = String(i);
+      op.textContent = String(i);
+      if (i === 70) op.selected = true;
+      bpmSelect.appendChild(op);
+    }
+
+    // ===== 音関連 =====
     let audioCtx = null;
-    let running = false;
-    let bpm = 70;
-    let schedulerId = null;
-    let rafId = null;
-    const lookaheadMs = 25;
-    const scheduleAheadTime = 0.18;
-    let nextBeatTime = 0;
-    let performanceTimeOffsetMs = 0;
 
-    let isPrecount = false;
-    let precountBeatsDone = 0;
-    const PRECOUNT_TOTAL_BEATS = 4;
-
-    let patternIndex = 0;
-    let rhythmIndex = 0;
-    let rhythmMeasureCount = 0;
-    let measuresPerRhythm = 1;
-    let currentBeatInBar = 0;
-    let secondSubdivisionStep = 0;
-
-    let activeFirstDots = [];
-    let firstDotNodes = [];
-    let currentDotCount = 0;
-    let currentSecondSide = "right";
-    let secondActive = false;
-    let activeStatusKey = "";
-
-    const visualEvents = [];
-
-    function clamp(value, min, max) {
-      return Math.max(min, Math.min(max, value));
-    }
-
-    function getCurrentPattern() {
-      return PATTERNS[patternIndex];
-    }
-
-    function getCurrentRhythm() {
-      return getCurrentPattern()[rhythmIndex];
-    }
-
-    function beatDuration() {
-      return 60 / bpm;
-    }
-
-    function getWallClockMs(audioTime) {
-      return (audioTime * 1000) + performanceTimeOffsetMs;
-    }
-
-    function clearVisualEvents() {
-      visualEvents.length = 0;
-    }
-
-    function ensureDotCount(count) {
-      if (count === currentDotCount) return;
-      currentDotCount = count;
-      dotRow.innerHTML = "";
-      firstDotNodes = [];
-      for (let i = 0; i < count; i++) {
-        const dot = document.createElement("div");
-        dot.className = "dot";
-        dotRow.appendChild(dot);
-        firstDotNodes.push(dot);
+    function ensureAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-      activeFirstDots = new Array(count).fill(false);
+      return audioCtx;
     }
 
-    function setDotActive(index, active) {
-      const node = firstDotNodes[index];
-      if (!node) return;
-      if (active) node.classList.add("active");
-      else node.classList.remove("active");
+    async function resumeAudio() {
+      const ctx = ensureAudio();
+      if (ctx.state === "suspended") {
+        await ctx.resume();
+      }
+      return ctx;
     }
 
-    function setSecondLineSide(side, active) {
-      const laneWidth = secondLane.clientWidth;
-      const lineWidth = pulseLine.offsetWidth || 8;
-      const sidePadding = 12;
-      const leftPos = sidePadding;
-      const rightPos = laneWidth - lineWidth - sidePadding;
-      pulseLine.style.left = (side === "right" ? rightPos : leftPos) + "px";
-      pulseLine.classList.toggle("active", !!active);
-      currentSecondSide = side;
-      secondActive = !!active;
-    }
-
-    function applyStatus(payload) {
-      modeBadge.textContent = payload.modeText;
-      patternBadge.textContent = payload.patternText;
-      measureBadge.textContent = payload.measureText;
-      beatBadge.textContent = payload.beatText;
-    }
-
-    function refreshStatus() {
-      const rhythm = getCurrentRhythm();
-      applyStatus({
-        modeText: running ? (isPrecount ? "プリカウント中" : "再生中") : "待機中",
-        patternText: isPrecount ? "第1: プリカウント（4分音符）" : `第1: ${rhythm.label}`,
-        measureText: isPrecount ? `プリカウント ${Math.min(precountBeatsDone + 1, 4)} / 4拍` : `${rhythmMeasureCount + 1} / ${measuresPerRhythm} 小節`,
-        beatText: `拍: ${currentBeatInBar + 1} / 4`
-      });
-    }
-
-    function createStatusPayload() {
-      const rhythm = getCurrentRhythm();
-      return {
-        key: [running ? 1 : 0, isPrecount ? 1 : 0, rhythm.label, rhythmMeasureCount, measuresPerRhythm, currentBeatInBar, precountBeatsDone].join('|'),
-        modeText: running ? (isPrecount ? "プリカウント中" : "再生中") : "待機中",
-        patternText: isPrecount ? "第1: プリカウント（4分音符）" : `第1: ${rhythm.label}`,
-        measureText: isPrecount ? `プリカウント ${Math.min(precountBeatsDone + 1, 4)} / 4拍` : `${rhythmMeasureCount + 1} / ${measuresPerRhythm} 小節`,
-        beatText: `拍: ${currentBeatInBar + 1} / 4`
-      };
-    }
-
-    function populateBpmOptions() {
-      bpmSelect.innerHTML = Array.from({ length: 181 }, (_, i) => {
-        const value = i + 20;
-        return `<option value="${value}">${value}</option>`;
-      }).join("");
-      bpmSelect.value = String(bpm);
-    }
-
-    function updateBpmDisplay() {
-      bpmSelect.value = String(bpm);
-    }
-
-    function buildIdleVisual() {
-      ensureDotCount(isPrecount ? 1 : getCurrentRhythm().count);
-      for (let i = 0; i < activeFirstDots.length; i++) setDotActive(i, false);
-      setSecondLineSide("right", false);
-      refreshStatus();
-    }
-
-    function playClick(isAccent, isSecond = false, time = 0) {
+    function scheduleClick(time, isAccent, isSecond) {
       if (!audioCtx) return;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -515,242 +326,483 @@
       gain.connect(audioCtx.destination);
       osc.type = "sine";
 
-      const freq = isSecond ? (isAccent ? 800 : 400) : (isAccent ? 1000 : 600);
-      osc.frequency.setValueAtTime(freq, time);
+      // 以前の系統に近い音色
+      const freq = isSecond
+        ? (isAccent ? 800 : 400)
+        : (isAccent ? 1000 : 600);
 
-      const peakGain = isSecond ? (isAccent ? 0.20 : 0.13) : (isAccent ? 0.12 : 0.08);
-      gain.gain.setValueAtTime(peakGain, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+      const peak = isSecond
+        ? (isAccent ? 0.20 : 0.13)
+        : (isAccent ? 0.12 : 0.08);
+
+      osc.frequency.setValueAtTime(freq, time);
+      gain.gain.setValueAtTime(peak, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
 
       osc.start(time);
-      osc.stop(time + 0.1);
+      osc.stop(time + 0.08);
     }
 
-    function addVisualEvent(kind, startAudioTime, endAudioTime, payload) {
-      visualEvents.push({
-        kind,
-        startMs: getWallClockMs(startAudioTime),
-        endMs: getWallClockMs(endAudioTime),
-        payload
-      });
+    // ===== 再生状態 =====
+    let running = false;
+    let rafId = 0;
+    let schedulerId = 0;
+
+    let nextMainTime = 0;
+    let nextSecondTime = 0;
+    let scheduleAhead = 0.12;  // 秒
+    let lookaheadMs = 25;
+
+    let mode = "stopped"; // stopped, precount, main
+
+    // main sequence state
+    let stepIndex = 0;         // pattern内 index
+    let measureInStep = 1;     // 1..selectedMeasures
+    let beatInBar = 1;         // 1..4
+    let mainSubIndex = 0;      // 0..subdivision-1
+
+    let secondSubIndex = 0;    // 0..1
+    let precountBeat = 1;      // 1..4
+
+    // 表示用「実際に発火した」状態
+    let activeMain = {
+      subdivision: 1,
+      subIndex: -1,
+      onUntil: 0
+    };
+    let activeSecond = {
+      index: -1,
+      onUntil: 0
+    };
+    let displayState = {
+      runningText: "停止中",
+      rhythmText: "第1: 4分音符",
+      measureText: "1/1小節",
+      beatText: "拍1/4"
+    };
+
+    // 先読み予約はするが、表示は time 到達後にしか変えない
+    const dueVisualEvents = [];
+    const dueStatusEvents = [];
+
+    function getMeasuresPerStep() {
+      return parseInt(measureSelect.value, 10);
     }
 
-    function scheduleStatusWindow(startTime, endTime) {
-      addVisualEvent("status", startTime, endTime, createStatusPayload());
+    function getPatternArray() {
+      return PATTERNS[patternSelect.value];
     }
 
-    function scheduleFirstBeat(time) {
-      const duration = beatDuration();
-      const rhythm = getCurrentRhythm();
-      const count = isPrecount ? 1 : rhythm.count;
-      const interval = duration / count;
-
-      ensureDotCount(count);
-
-      for (let i = 0; i < count; i++) {
-        const eventTime = time + i * interval;
-        const visualDur = Math.max(0.045, interval * 0.72);
-        playClick(i === 0, false, eventTime);
-        addVisualEvent("first", eventTime, eventTime + visualDur, { index: i, count });
-      }
+    function getCurrentSubdivision() {
+      return getPatternArray()[stepIndex];
     }
 
-    function scheduleSecondBeat(time) {
-      const duration = beatDuration();
-      const count = 2;
-      const interval = duration / count;
-
-      for (let i = 0; i < count; i++) {
-        const eventTime = time + i * interval;
-        const globalIndex = secondSubdivisionStep + i;
-        const side = (globalIndex % 2 === 0) ? "right" : "left";
-        const visualDur = Math.max(0.055, interval * 0.78);
-        playClick(i === 0, true, eventTime);
-        addVisualEvent("second", eventTime, eventTime + visualDur, { side });
-      }
-
-      secondSubdivisionStep += count;
+    function resetMainState() {
+      stepIndex = 0;
+      measureInStep = 1;
+      beatInBar = 1;
+      mainSubIndex = 0;
+      secondSubIndex = 0;
     }
 
-    function advanceStateAfterBeat() {
-      if (isPrecount) {
-        precountBeatsDone++;
-        currentBeatInBar = (currentBeatInBar + 1) % 4;
-        if (precountBeatsDone >= PRECOUNT_TOTAL_BEATS) {
-          isPrecount = false;
-          precountBeatsDone = 0;
-          currentBeatInBar = 0;
-          secondSubdivisionStep = 0;
-          rhythmIndex = 0;
-          rhythmMeasureCount = 0;
-          ensureDotCount(getCurrentRhythm().count);
-        }
-        return;
-      }
+    function setStatus(runText, rhythmText, measureText, beatText) {
+      displayState.runningText = runText;
+      displayState.rhythmText = rhythmText;
+      displayState.measureText = measureText;
+      displayState.beatText = beatText;
 
-      currentBeatInBar++;
-      if (currentBeatInBar >= 4) {
-        currentBeatInBar = 0;
-        rhythmMeasureCount++;
-        if (rhythmMeasureCount >= measuresPerRhythm) {
-          rhythmMeasureCount = 0;
-          rhythmIndex = (rhythmIndex + 1) % getCurrentPattern().length;
-          ensureDotCount(getCurrentRhythm().count);
-        }
-      }
+      statusRun.textContent = runText;
+      statusRhythm.textContent = rhythmText;
+      statusMeasure.textContent = measureText;
+      statusBeat.textContent = beatText;
     }
 
-    function pruneVisualEvents(nowMs) {
-      while (visualEvents.length && visualEvents[0].endMs < nowMs - 20) {
-        visualEvents.shift();
-      }
-    }
+    function advanceMainStepIfNeeded() {
+      const measuresPerStep = getMeasuresPerStep();
 
-    function renderFrame(nowMs) {
-      if (!running) return;
-
-      pruneVisualEvents(nowMs);
-
-      let desiredCount = currentDotCount;
-      const activeDotSet = new Set();
-      let secondSide = currentSecondSide;
-      let secondIsActive = false;
-      let activeStatusPayload = null;
-
-      for (const event of visualEvents) {
-        if (nowMs >= event.startMs && nowMs < event.endMs) {
-          if (event.kind === "first") {
-            desiredCount = event.payload.count;
-            activeDotSet.add(event.payload.index);
-          } else if (event.kind === "second") {
-            secondSide = event.payload.side;
-            secondIsActive = true;
-          } else if (event.kind === "status") {
-            activeStatusPayload = event.payload;
+      beatInBar++;
+      if (beatInBar > 4) {
+        beatInBar = 1;
+        measureInStep++;
+        if (measureInStep > measuresPerStep) {
+          measureInStep = 1;
+          stepIndex++;
+          if (stepIndex >= getPatternArray().length) {
+            stepIndex = 0;
           }
         }
       }
+    }
 
-      ensureDotCount(desiredCount || (isPrecount ? 1 : getCurrentRhythm().count));
-      for (let i = 0; i < firstDotNodes.length; i++) {
-        const active = activeDotSet.has(i);
-        if (activeFirstDots[i] !== active) {
-          activeFirstDots[i] = active;
-          setDotActive(i, active);
+    function queueMainStatusEvent(time, subdivision, measureNow, measuresPerStep, beatNow) {
+      dueStatusEvents.push({
+        time,
+        runningText: "再生中",
+        rhythmText: `第1: ${RHYTHM_LABEL[subdivision]}`,
+        measureText: `${measureNow}/${measuresPerStep}小節`,
+        beatText: `拍${beatNow}/4`
+      });
+    }
+
+    function queuePrecountStatusEvent(time, beatNow) {
+      dueStatusEvents.push({
+        time,
+        runningText: "再生中（プリカウント）",
+        rhythmText: "第1: 4分音符",
+        measureText: `1/1小節`,
+        beatText: `拍${beatNow}/4`
+      });
+    }
+
+    function schedulePrecountEvents(now) {
+      const beatDur = 60 / parseInt(bpmSelect.value, 10);
+      while (nextMainTime < now + scheduleAhead && mode === "precount") {
+        const beatNow = precountBeat;
+        const accent = (beatNow === 1);
+
+        scheduleClick(nextMainTime, accent, false);
+
+        dueVisualEvents.push({
+          time: nextMainTime,
+          kind: "main",
+          subdivision: 1,
+          subIndex: 0,
+          onUntil: nextMainTime + Math.min(0.12, beatDur * 0.7)
+        });
+
+        queuePrecountStatusEvent(nextMainTime, beatNow);
+
+        precountBeat++;
+        if (precountBeat > 4) {
+          // 次は本編開始
+          mode = "main";
+          resetMainState();
+          nextMainTime += beatDur;
+          nextSecondTime = nextMainTime; // 本編開始位置に合わせる
+          break;
+        } else {
+          nextMainTime += beatDur;
+        }
+      }
+    }
+
+    function scheduleMainEvents(now) {
+      const bpm = parseInt(bpmSelect.value, 10);
+      const beatDur = 60 / bpm;
+      const secondDur = beatDur / 2;
+
+      while (mode === "main" && (
+        nextMainTime < now + scheduleAhead ||
+        nextSecondTime < now + scheduleAhead
+      )) {
+        // 先に来るイベントを順に処理
+        if (nextMainTime <= nextSecondTime) {
+          const subdivision = getCurrentSubdivision();
+          const subDur = beatDur / subdivision;
+
+          const currentTime = nextMainTime;
+          const currentSubIndex = mainSubIndex;
+          const currentBeat = beatInBar;
+          const currentMeasure = measureInStep;
+          const measuresPerStep = getMeasuresPerStep();
+
+          const isBeatHead = (currentSubIndex === 0);
+          const isAccent = (currentSubIndex === 0);
+
+          scheduleClick(currentTime, isAccent, false);
+
+          dueVisualEvents.push({
+            time: currentTime,
+            kind: "main",
+            subdivision,
+            subIndex: currentSubIndex,
+            onUntil: currentTime + Math.min(0.10, subDur * 0.75)
+          });
+
+          if (isBeatHead) {
+            queueMainStatusEvent(
+              currentTime,
+              subdivision,
+              currentMeasure,
+              measuresPerStep,
+              currentBeat
+            );
+          }
+
+          mainSubIndex++;
+          if (mainSubIndex >= subdivision) {
+            mainSubIndex = 0;
+            advanceMainStepIfNeeded();
+          }
+
+          nextMainTime += subDur;
+        } else {
+          const currentTime = nextSecondTime;
+          const idx = secondSubIndex; // 0=右(BD), 1=左(HH)
+          const isAccent = (idx === 0);
+
+          scheduleClick(currentTime, isAccent, true);
+
+          dueVisualEvents.push({
+            time: currentTime,
+            kind: "second",
+            secondIndex: idx,
+            onUntil: currentTime + Math.min(0.10, secondDur * 0.8)
+          });
+
+          secondSubIndex = (secondSubIndex + 1) % 2;
+          nextSecondTime += secondDur;
+        }
+      }
+    }
+
+    function processDueEvents(now) {
+      // visual
+      while (dueVisualEvents.length && dueVisualEvents[0].time <= now) {
+        const ev = dueVisualEvents.shift();
+        if (ev.kind === "main") {
+          activeMain.subdivision = ev.subdivision;
+          activeMain.subIndex = ev.subIndex;
+          activeMain.onUntil = ev.onUntil;
+        } else if (ev.kind === "second") {
+          activeSecond.index = ev.secondIndex;
+          activeSecond.onUntil = ev.onUntil;
         }
       }
 
-      if (secondSide !== currentSecondSide || secondIsActive !== secondActive) {
-        setSecondLineSide(secondSide, secondIsActive);
+      // status
+      while (dueStatusEvents.length && dueStatusEvents[0].time <= now) {
+        const ev = dueStatusEvents.shift();
+        setStatus(ev.runningText, ev.rhythmText, ev.measureText, ev.beatText);
       }
 
-      if (activeStatusPayload && activeStatusPayload.key !== activeStatusKey) {
-        applyStatus(activeStatusPayload);
-        activeStatusKey = activeStatusPayload.key;
+      if (activeMain.onUntil <= now) {
+        activeMain.subIndex = -1;
       }
-
-      rafId = window.requestAnimationFrame(renderFrame);
+      if (activeSecond.onUntil <= now) {
+        activeSecond.index = -1;
+      }
     }
 
-    function scheduler() {
+    function schedulerLoop() {
       if (!running || !audioCtx) return;
-      while (nextBeatTime < audioCtx.currentTime + scheduleAheadTime) {
-        const beatEndTime = nextBeatTime + beatDuration();
-        scheduleStatusWindow(nextBeatTime, beatEndTime);
-        scheduleFirstBeat(nextBeatTime);
-        scheduleSecondBeat(nextBeatTime);
-        advanceStateAfterBeat();
-        nextBeatTime = beatEndTime;
+      const now = audioCtx.currentTime;
+
+      if (mode === "precount") {
+        schedulePrecountEvents(now);
+      }
+      if (mode === "main") {
+        scheduleMainEvents(now);
       }
     }
 
-    async function ensureAudioContext() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // ===== 描画 =====
+    function drawClockFace() {
+      const w = mainCanvas.width;
+      const h = mainCanvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const radius = 104;
+
+      // 外周リング
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + 18, 0, Math.PI * 2);
+      ctx.strokeStyle = "#303030";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 中心
+      ctx.beginPath();
+      ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#888";
+      ctx.fill();
+
+      const subdivision = activeMain.subdivision || 1;
+      const angles = CLOCK_ANGLES[subdivision];
+
+      // 候補位置を薄いグレー
+      for (let i = 0; i < angles.length; i++) {
+        const rad = angles[i] * Math.PI / 180;
+        const x = cx + Math.cos(rad) * radius;
+        const y = cy + Math.sin(rad) * radius;
+
+        // 中心からの薄い線
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = "rgba(255,255,255,0.06)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 点
+        const isActive = (i === activeMain.subIndex);
+        ctx.beginPath();
+        ctx.arc(x, y, 13, 0, Math.PI * 2);
+        ctx.fillStyle = isActive ? "#35ff7a" : "#5a5a5a";
+        ctx.shadowColor = isActive ? "#35ff7a" : "transparent";
+        ctx.shadowBlur = isActive ? 18 : 0;
+        ctx.fill();
+
+        // 内側ハイライト
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = isActive ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.08)";
+        ctx.fill();
       }
-      if (audioCtx.state === "suspended") {
-        await audioCtx.resume();
-      }
+
+      // 12時マーク
+      ctx.beginPath();
+      ctx.arc(cx, cy - (radius + 18), 3, 0, Math.PI * 2);
+      ctx.fillStyle = "#c8c8c8";
+      ctx.fill();
     }
 
-    async function startMetronome() {
-      await ensureAudioContext();
-      performanceTimeOffsetMs = performance.now() - (audioCtx.currentTime * 1000);
-      clearVisualEvents();
-      activeStatusKey = "";
+    function drawSecondLine() {
+      const boxWidth = secondVisual.clientWidth;
+      const pad = 12;
+      const rightX = boxWidth - pad - secondLine.offsetWidth;
+      const leftX = pad;
+
+      let x = leftX;
+      if (activeSecond.index === 0) {
+        x = rightX; // 奇数回=右端=BD
+      } else if (activeSecond.index === 1) {
+        x = leftX;  // 偶数回=左端=HH
+      } else {
+        // 非点灯時は前回位置維持
+        const prev = parseFloat(secondLine.dataset.x || String(leftX));
+        x = Number.isFinite(prev) ? prev : leftX;
+      }
+
+      secondLine.style.left = `${x}px`;
+      secondLine.dataset.x = String(x);
+      secondLine.style.opacity = activeSecond.index === -1 ? "0.35" : "1";
+    }
+
+    function renderLoop() {
+      if (!running || !audioCtx) return;
+      const now = audioCtx.currentTime;
+
+      processDueEvents(now);
+      drawClockFace();
+      drawSecondLine();
+
+      rafId = requestAnimationFrame(renderLoop);
+    }
+
+    // ===== 開始/停止 =====
+    async function start() {
+      await resumeAudio();
+
+      stop(true);
+
       running = true;
-      isPrecount = true;
-      precountBeatsDone = 0;
-      currentBeatInBar = 0;
-      secondSubdivisionStep = 0;
-      rhythmIndex = 0;
-      rhythmMeasureCount = 0;
-      nextBeatTime = audioCtx.currentTime + 0.08;
-      startStopBtn.textContent = "ストップ";
-      startStopBtn.classList.add("running");
-      buildIdleVisual();
-      scheduler();
-      schedulerId = window.setInterval(scheduler, lookaheadMs);
-      rafId = window.requestAnimationFrame(renderFrame);
+      mode = "precount";
+      precountBeat = 1;
+      resetMainState();
+
+      const now = audioCtx.currentTime;
+      const startLead = 0.08;
+      nextMainTime = now + startLead;
+      nextSecondTime = now + startLead;
+
+      dueVisualEvents.length = 0;
+      dueStatusEvents.length = 0;
+
+      activeMain = { subdivision: 1, subIndex: -1, onUntil: 0 };
+      activeSecond = { index: -1, onUntil: 0 };
+
+      setStatus("再生中（プリカウント）", "第1: 4分音符", "1/1小節", "拍1/4");
+
+      schedulerId = setInterval(schedulerLoop, lookaheadMs);
+      schedulerLoop();
+      renderLoop();
     }
 
-    function stopMetronome() {
+    function stop(silent = false) {
       running = false;
+      mode = "stopped";
+
       if (schedulerId) {
-        window.clearInterval(schedulerId);
-        schedulerId = null;
+        clearInterval(schedulerId);
+        schedulerId = 0;
       }
       if (rafId) {
-        window.cancelAnimationFrame(rafId);
-        rafId = null;
+        cancelAnimationFrame(rafId);
+        rafId = 0;
       }
-      clearVisualEvents();
-      activeStatusKey = "";
-      startStopBtn.textContent = "スタート";
-      startStopBtn.classList.remove("running");
-      isPrecount = false;
-      precountBeatsDone = 0;
-      currentBeatInBar = 0;
-      secondSubdivisionStep = 0;
-      rhythmIndex = 0;
-      rhythmMeasureCount = 0;
-      buildIdleVisual();
+
+      dueVisualEvents.length = 0;
+      dueStatusEvents.length = 0;
+
+      activeMain = {
+        subdivision: getPatternArray()[0],
+        subIndex: -1,
+        onUntil: 0
+      };
+      activeSecond = {
+        index: -1,
+        onUntil: 0
+      };
+
+      drawClockFace();
+      drawSecondLine();
+
+      if (!silent) {
+        setStatus(
+          "停止中",
+          `第1: ${RHYTHM_LABEL[getPatternArray()[0]]}`,
+          `1/${getMeasuresPerStep()}小節`,
+          "拍1/4"
+        );
+      }
     }
 
-    bpmSelect.addEventListener("change", () => {
-      bpm = clamp(Number(bpmSelect.value), 20, 200);
-      updateBpmDisplay();
-    });
+    // ===== イベント =====
+    startBtn.addEventListener("click", start);
+    stopBtn.addEventListener("click", () => stop(false));
 
     patternSelect.addEventListener("change", () => {
-      patternIndex = Number(patternSelect.value);
-      rhythmIndex = 0;
-      rhythmMeasureCount = 0;
-      buildIdleVisual();
+      if (!running) {
+        activeMain.subdivision = getPatternArray()[0];
+        activeMain.subIndex = -1;
+        drawClockFace();
+        setStatus(
+          "停止中",
+          `第1: ${RHYTHM_LABEL[getPatternArray()[0]]}`,
+          `1/${getMeasuresPerStep()}小節`,
+          "拍1/4"
+        );
+      }
     });
 
     measureSelect.addEventListener("change", () => {
-      measuresPerRhythm = Number(measureSelect.value);
-      rhythmMeasureCount = 0;
-      buildIdleVisual();
-    });
-
-    startStopBtn.addEventListener("click", async () => {
-      if (running) {
-        stopMetronome();
-      } else {
-        await startMetronome();
+      if (!running) {
+        setStatus(
+          "停止中",
+          `第1: ${RHYTHM_LABEL[getPatternArray()[0]]}`,
+          `1/${getMeasuresPerStep()}小節`,
+          "拍1/4"
+        );
       }
     });
 
-    window.addEventListener("resize", () => {
-      setSecondLineSide(currentSecondSide, secondActive);
+    bpmSelect.addEventListener("change", () => {
+      // 停止中は何もしない。再スタート時に反映。
     });
 
-    measuresPerRhythm = Number(measureSelect.value);
-    populateBpmOptions();
-    updateBpmDisplay();
-    buildIdleVisual();
+    window.addEventListener("resize", () => {
+      drawClockFace();
+      drawSecondLine();
+    });
+
+    // 初期表示
+    activeMain.subdivision = getPatternArray()[0];
+    drawClockFace();
+    drawSecondLine();
+    setStatus("停止中", "第1: 4分音符", "1/1小節", "拍1/4");
   </script>
 </body>
 </html>
