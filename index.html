@@ -13,7 +13,7 @@
       --muted:#8a8a8a;
       --dot:#555;
       --active:#35ff7a;
-      --line:#17d7ff;
+      --line:#ff4d4d;
       --accent:#ffaa00;
       --border:#333;
       --danger:#ff6b6b;
@@ -105,7 +105,6 @@
       color:#ddd;
     }
 
-    /* 第1：正方形寄り */
     .main-visual-wrap{
       display:flex;
       justify-content:center;
@@ -124,7 +123,6 @@
       box-shadow:inset 0 0 0 1px rgba(255,255,255,0.02);
     }
 
-    /* 第2：縦幅短め */
     .second-visual{
       position:relative;
       height:64px;
@@ -139,18 +137,19 @@
       width:4px;
       height:44px;
       background:var(--line);
-      box-shadow:0 0 12px rgba(23,215,255,0.75);
+      box-shadow:0 0 14px rgba(255,77,77,0.95);
       border-radius:2px;
       transition:none;
       left:12px;
+      opacity:0.18;
     }
     .second-label-left, .second-label-right{
       position:absolute;
       top:50%;
       transform:translateY(-50%);
       font-size:0.8rem;
-      color:#9adff0;
-      opacity:0.8;
+      color:#ff9a9a;
+      opacity:0.85;
       user-select:none;
       pointer-events:none;
     }
@@ -196,6 +195,7 @@
             <select id="patternSelect">
               <option value="1">パターン1（4→8→3連→16→6→32→6→16→3連→8）</option>
               <option value="2">パターン2（4→8→3連→16→6→16→3連→8）</option>
+              <option value="3">パターン3（3連→6連）</option>
             </select>
           </div>
           <div class="field">
@@ -205,6 +205,7 @@
               <option value="2">2小節</option>
               <option value="3">3小節</option>
               <option value="4">4小節</option>
+              <option value="8">8小節</option>
             </select>
           </div>
           <div class="field">
@@ -247,10 +248,10 @@
   </div>
 
   <script>
-    // ===== 基本設定 =====
     const PATTERNS = {
       1: [1, 2, 3, 4, 6, 8, 6, 4, 3, 2],
-      2: [1, 2, 3, 4, 6, 4, 3, 2]
+      2: [1, 2, 3, 4, 6, 4, 3, 2],
+      3: [3, 6]
     };
 
     const RHYTHM_LABEL = {
@@ -262,18 +263,15 @@
       8: "32分音符"
     };
 
-    // 時計文字盤配置（12時=上）
-    // 角度は度数。-90 が12時。
     const CLOCK_ANGLES = {
-      1: [-90],                            // 12時
-      2: [-90, 90],                        // 12時, 6時
-      3: [-90, 30, 150],                   // 12時, 4時, 8時
-      4: [-90, 0, 90, 180],                // 12時, 3時, 6時, 9時
-      6: [-90, -30, 30, 90, 150, 210],     // 12時, 2時, 4時, 6時, 8時, 10時
-      8: [-90, -45, 0, 45, 90, 135, 180, 225] // 12, 1:30, 3, 4:30, 6, 7:30, 9, 10:30
+      1: [-90],
+      2: [-90, 90],
+      3: [-90, 30, 150],
+      4: [-90, 0, 90, 180],
+      6: [-90, -30, 30, 90, 150, 210],
+      8: [-90, -45, 0, 45, 90, 135, 180, 225]
     };
 
-    // ===== DOM =====
     const patternSelect = document.getElementById("patternSelect");
     const measureSelect = document.getElementById("measureSelect");
     const bpmSelect = document.getElementById("bpmSelect");
@@ -291,7 +289,6 @@
     const statusMeasure = document.getElementById("statusMeasure");
     const statusBeat = document.getElementById("statusBeat");
 
-    // ===== BPMプルダウン =====
     for (let i = 20; i <= 200; i++) {
       const op = document.createElement("option");
       op.value = String(i);
@@ -300,7 +297,6 @@
       bpmSelect.appendChild(op);
     }
 
-    // ===== 音関連 =====
     let audioCtx = null;
 
     function ensureAudio() {
@@ -326,7 +322,6 @@
       gain.connect(audioCtx.destination);
       osc.type = "sine";
 
-      // 以前の系統に近い音色
       const freq = isSecond
         ? (isAccent ? 800 : 400)
         : (isAccent ? 1000 : 600);
@@ -343,28 +338,25 @@
       osc.stop(time + 0.08);
     }
 
-    // ===== 再生状態 =====
     let running = false;
     let rafId = 0;
     let schedulerId = 0;
 
     let nextMainTime = 0;
     let nextSecondTime = 0;
-    let scheduleAhead = 0.12;  // 秒
+    let scheduleAhead = 0.12;
     let lookaheadMs = 25;
 
-    let mode = "stopped"; // stopped, precount, main
+    let mode = "stopped";
 
-    // main sequence state
-    let stepIndex = 0;         // pattern内 index
-    let measureInStep = 1;     // 1..selectedMeasures
-    let beatInBar = 1;         // 1..4
-    let mainSubIndex = 0;      // 0..subdivision-1
+    let stepIndex = 0;
+    let measureInStep = 1;
+    let beatInBar = 1;
+    let mainSubIndex = 0;
 
-    let secondSubIndex = 0;    // 0..1
-    let precountBeat = 1;      // 1..4
+    let secondSubIndex = 0;
+    let precountBeat = 1;
 
-    // 表示用「実際に発火した」状態
     let activeMain = {
       subdivision: 1,
       subIndex: -1,
@@ -374,14 +366,7 @@
       index: -1,
       onUntil: 0
     };
-    let displayState = {
-      runningText: "停止中",
-      rhythmText: "第1: 4分音符",
-      measureText: "1/1小節",
-      beatText: "拍1/4"
-    };
 
-    // 先読み予約はするが、表示は time 到達後にしか変えない
     const dueVisualEvents = [];
     const dueStatusEvents = [];
 
@@ -393,10 +378,6 @@
       return PATTERNS[patternSelect.value];
     }
 
-    function getCurrentSubdivision() {
-      return getPatternArray()[stepIndex];
-    }
-
     function resetMainState() {
       stepIndex = 0;
       measureInStep = 1;
@@ -406,11 +387,6 @@
     }
 
     function setStatus(runText, rhythmText, measureText, beatText) {
-      displayState.runningText = runText;
-      displayState.rhythmText = rhythmText;
-      displayState.measureText = measureText;
-      displayState.beatText = beatText;
-
       statusRun.textContent = runText;
       statusRhythm.textContent = rhythmText;
       statusMeasure.textContent = measureText;
@@ -449,7 +425,7 @@
         time,
         runningText: "再生中（プリカウント）",
         rhythmText: "第1: 4分音符",
-        measureText: `1/1小節`,
+        measureText: "1/1小節",
         beatText: `拍${beatNow}/4`
       });
     }
@@ -474,11 +450,10 @@
 
         precountBeat++;
         if (precountBeat > 4) {
-          // 次は本編開始
           mode = "main";
           resetMainState();
           nextMainTime += beatDur;
-          nextSecondTime = nextMainTime; // 本編開始位置に合わせる
+          nextSecondTime = nextMainTime;
           break;
         } else {
           nextMainTime += beatDur;
@@ -495,9 +470,8 @@
         nextMainTime < now + scheduleAhead ||
         nextSecondTime < now + scheduleAhead
       )) {
-        // 先に来るイベントを順に処理
         if (nextMainTime <= nextSecondTime) {
-          const subdivision = getCurrentSubdivision();
+          const subdivision = getPatternArray()[stepIndex];
           const subDur = beatDur / subdivision;
 
           const currentTime = nextMainTime;
@@ -538,7 +512,7 @@
           nextMainTime += subDur;
         } else {
           const currentTime = nextSecondTime;
-          const idx = secondSubIndex; // 0=右(BD), 1=左(HH)
+          const idx = secondSubIndex;
           const isAccent = (idx === 0);
 
           scheduleClick(currentTime, isAccent, true);
@@ -547,7 +521,7 @@
             time: currentTime,
             kind: "second",
             secondIndex: idx,
-            onUntil: currentTime + Math.min(0.10, secondDur * 0.8)
+            onUntil: currentTime + Math.min(0.035, secondDur * 0.22)
           });
 
           secondSubIndex = (secondSubIndex + 1) % 2;
@@ -557,7 +531,6 @@
     }
 
     function processDueEvents(now) {
-      // visual
       while (dueVisualEvents.length && dueVisualEvents[0].time <= now) {
         const ev = dueVisualEvents.shift();
         if (ev.kind === "main") {
@@ -570,7 +543,6 @@
         }
       }
 
-      // status
       while (dueStatusEvents.length && dueStatusEvents[0].time <= now) {
         const ev = dueStatusEvents.shift();
         setStatus(ev.runningText, ev.rhythmText, ev.measureText, ev.beatText);
@@ -596,7 +568,6 @@
       }
     }
 
-    // ===== 描画 =====
     function drawClockFace() {
       const w = mainCanvas.width;
       const h = mainCanvas.height;
@@ -606,14 +577,12 @@
       const cy = h / 2;
       const radius = 104;
 
-      // 外周リング
       ctx.beginPath();
       ctx.arc(cx, cy, radius + 18, 0, Math.PI * 2);
       ctx.strokeStyle = "#303030";
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // 中心
       ctx.beginPath();
       ctx.arc(cx, cy, 4, 0, Math.PI * 2);
       ctx.fillStyle = "#888";
@@ -622,13 +591,11 @@
       const subdivision = activeMain.subdivision || 1;
       const angles = CLOCK_ANGLES[subdivision];
 
-      // 候補位置を薄いグレー
       for (let i = 0; i < angles.length; i++) {
         const rad = angles[i] * Math.PI / 180;
         const x = cx + Math.cos(rad) * radius;
         const y = cy + Math.sin(rad) * radius;
 
-        // 中心からの薄い線
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.lineTo(x, y);
@@ -636,7 +603,6 @@
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // 点
         const isActive = (i === activeMain.subIndex);
         ctx.beginPath();
         ctx.arc(x, y, 13, 0, Math.PI * 2);
@@ -645,14 +611,12 @@
         ctx.shadowBlur = isActive ? 18 : 0;
         ctx.fill();
 
-        // 内側ハイライト
         ctx.beginPath();
         ctx.arc(x, y, 5, 0, Math.PI * 2);
         ctx.fillStyle = isActive ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.08)";
         ctx.fill();
       }
 
-      // 12時マーク
       ctx.beginPath();
       ctx.arc(cx, cy - (radius + 18), 3, 0, Math.PI * 2);
       ctx.fillStyle = "#c8c8c8";
@@ -667,18 +631,20 @@
 
       let x = leftX;
       if (activeSecond.index === 0) {
-        x = rightX; // 奇数回=右端=BD
+        x = rightX;
       } else if (activeSecond.index === 1) {
-        x = leftX;  // 偶数回=左端=HH
+        x = leftX;
       } else {
-        // 非点灯時は前回位置維持
         const prev = parseFloat(secondLine.dataset.x || String(leftX));
         x = Number.isFinite(prev) ? prev : leftX;
       }
 
       secondLine.style.left = `${x}px`;
       secondLine.dataset.x = String(x);
-      secondLine.style.opacity = activeSecond.index === -1 ? "0.35" : "1";
+      secondLine.style.opacity = activeSecond.index === -1 ? "0.06" : "1";
+      secondLine.style.boxShadow = activeSecond.index === -1
+        ? "0 0 0 rgba(255,77,77,0)"
+        : "0 0 16px rgba(255,77,77,1)";
     }
 
     function renderLoop() {
@@ -692,7 +658,6 @@
       rafId = requestAnimationFrame(renderLoop);
     }
 
-    // ===== 開始/停止 =====
     async function start() {
       await resumeAudio();
 
@@ -760,7 +725,6 @@
       }
     }
 
-    // ===== イベント =====
     startBtn.addEventListener("click", start);
     stopBtn.addEventListener("click", () => stop(false));
 
@@ -789,20 +753,17 @@
       }
     });
 
-    bpmSelect.addEventListener("change", () => {
-      // 停止中は何もしない。再スタート時に反映。
-    });
+    bpmSelect.addEventListener("change", () => {});
 
     window.addEventListener("resize", () => {
       drawClockFace();
       drawSecondLine();
     });
 
-    // 初期表示
     activeMain.subdivision = getPatternArray()[0];
     drawClockFace();
     drawSecondLine();
-    setStatus("停止中", "第1: 4分音符", "1/1小節", "拍1/4");
+    setStatus("停止中", `第1: ${RHYTHM_LABEL[getPatternArray()[0]]}`, `1/${getMeasuresPerStep()}小節`, "拍1/4");
   </script>
 </body>
 </html>
